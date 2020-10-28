@@ -29,7 +29,6 @@ import android.widget.ImageView;
 
 import com.arexperiments.justaline.R;
 import com.arexperiments.justaline.analytics.AnalyticsEvents;
-import com.arexperiments.justaline.analytics.Fa;
 
 import java.util.concurrent.TimeUnit;
 
@@ -73,8 +72,6 @@ public class RecordButton extends FrameLayout {
      * Listener to inform of taps and maximum time reached
      */
     private Listener mListener;
-
-    private Fa mAnalytics;
 
     /*
      * Recording and interaction state
@@ -121,7 +118,6 @@ public class RecordButton extends FrameLayout {
 
     private void init() {
         inflate(getContext(), R.layout.view_record_button, this);
-        mAnalytics = Fa.get();
 
         mStopButton = findViewById(R.id.red_square);
         mRecordingBackground = findViewById(R.id.recording_background);
@@ -163,9 +159,6 @@ public class RecordButton extends FrameLayout {
 
                 setContentDescription(getContext().getString(R.string.content_description_record));
 
-                mAnalytics.send(AnalyticsEvents.EVENT_RECORD,
-                        AnalyticsEvents.PARAM_RECORD_METHOD,
-                        AnalyticsEvents.VALUE_RECORD_METHOD_ACCESSIBLE_TAP);
                 return super.performClick();
         }
 
@@ -211,11 +204,6 @@ public class RecordButton extends FrameLayout {
                     } else {
                         // user either tapped a second time or released their original tap
                         setRecording(false);
-
-                        mAnalytics.send(AnalyticsEvents.EVENT_RECORD,
-                                AnalyticsEvents.PARAM_RECORD_METHOD,
-                                mTapTwo ? AnalyticsEvents.VALUE_RECORD_METHOD_TAP
-                                        : AnalyticsEvents.VALUE_RECORD_METHOD_HOLD);
                     }
 
                     break;

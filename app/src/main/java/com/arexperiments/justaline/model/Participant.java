@@ -14,10 +14,6 @@
 
 package com.arexperiments.justaline.model;
 
-import com.google.firebase.database.Exclude;
-import com.google.firebase.database.PropertyName;
-import com.google.firebase.database.ServerValue;
-
 import java.util.HashMap;
 
 /**
@@ -26,16 +22,12 @@ import java.util.HashMap;
 
 public class Participant {
 
-    @PropertyName("readyToSetAnchor")
     Boolean readyToSetAnchor;
 
-    @PropertyName("anchorResolved")
     Boolean anchorResolved;
 
-    @PropertyName("pairing")
     Boolean isPairing;
 
-    @PropertyName("lastSeen")
     HashMap<String, Object> lastSeen;
 
     public Participant() {
@@ -46,7 +38,6 @@ public class Participant {
         this.anchorResolved = anchorResolved;
         this.isPairing = isPairing;
         this.lastSeen = new HashMap<>();
-        lastSeen.put("timestamp", ServerValue.TIMESTAMP);
     }
 
     public static Participant readyToSetAnchor(boolean readyToSetAnchor) {
@@ -55,7 +46,6 @@ public class Participant {
         participant.anchorResolved = false;
         participant.isPairing = true;
         participant.lastSeen = new HashMap<>();
-        participant.lastSeen.put("timestamp", ServerValue.TIMESTAMP);
         return participant;
     }
 
@@ -91,7 +81,6 @@ public class Participant {
         return lastSeen;
     }
 
-    @Exclude
     public long getLastSeenLong() {
         return (long) lastSeen.get("timestamp");
     }

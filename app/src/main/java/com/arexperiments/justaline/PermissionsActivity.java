@@ -22,7 +22,6 @@ import android.support.annotation.NonNull;
 import android.util.Log;
 import android.widget.Toast;
 
-import com.arexperiments.justaline.analytics.Fa;
 import com.google.ar.core.ArCoreApk;
 
 public class PermissionsActivity extends BaseActivity {
@@ -31,8 +30,6 @@ public class PermissionsActivity extends BaseActivity {
 
     @SuppressWarnings("FieldCanBeLocal")
     private final int SPLASH_DISPLAY_LENGTH = 2000;
-
-    private Fa mAnalytics;
 
     private boolean mLaunchDrawAR = true;
 
@@ -51,8 +48,6 @@ public class PermissionsActivity extends BaseActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_permissions);
-
-        mAnalytics = Fa.get();
     }
 
     @Override
@@ -104,8 +99,6 @@ public class PermissionsActivity extends BaseActivity {
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
                                            @NonNull int[] grantResults) {
-
-        PermissionHelper.sendPermissionsAnalytics(mAnalytics, permissions, grantResults);
 
         if (!PermissionHelper.hasRequiredPermissions(this)) {
             mPermissionRationaleDialog = PermissionHelper.requestRequiredPermissions(this, false);

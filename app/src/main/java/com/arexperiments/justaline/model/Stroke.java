@@ -18,10 +18,6 @@ import com.arexperiments.justaline.AppSettings;
 import com.arexperiments.justaline.BiquadFilter;
 import com.arexperiments.justaline.rendering.LineUtils;
 import com.google.ar.core.Pose;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.Exclude;
-import com.google.firebase.database.IgnoreExtraProperties;
-import com.google.firebase.database.PropertyName;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -34,39 +30,26 @@ import javax.vecmath.Vector3f;
  * Created by Kat on 11/6/17.
  * Single line stroke model for AR
  */
-@IgnoreExtraProperties
 public class Stroke {
 
     private static final String TAG = "Stroke";
 
-    @PropertyName("points")
     private ArrayList<Vector3f> points = new ArrayList<>();
 
-    @PropertyName("lineWidth")
     private float lineWidth;
 
-    @PropertyName("creator")
     public String creator = "";
 
-    @Exclude
     private BiquadFilter biquadFilter;
 
-    @Exclude
     private BiquadFilter animationFilter;
 
-    @Exclude
     public boolean localLine = true;
 
-    @Exclude
     public float animatedLength = 0;
 
-    @Exclude
     public float totalLength = 0;
 
-    @Exclude
-    private DatabaseReference firebaseReference;
-
-    @Exclude
     public boolean finished = false;
 
 
@@ -287,65 +270,10 @@ public class Stroke {
         this.lineWidth = lineWidth;
     }
 
-    public void setFirebaseValue(StrokeUpdate strokeUpdate, StrokeUpdate previousStrokeUpdate,
-                                 DatabaseReference.CompletionListener completionListener) {
-//        Stroke copy = new Stroke();
-//        copy.lineWidth = strokeUpdate.stroke.lineWidth;
-//        int numPointsToSend = strokeUpdate.stroke.points.size();
-//        copy.points = strokeUpdate.stroke.points.subList(0, strokeUpdate.stroke.points.size());
-//
-//        copy.creator = strokeUpdate.stroke.creator;
-
-        // if points havent been set, or if creator or lineWidth has changed, force a full update
-        if (previousStrokeUpdate == null
-                || previousStrokeUpdate.stroke.points.size() == 0
-                || !previousStrokeUpdate.stroke.creator.equals(strokeUpdate.stroke.creator)
-                || previousStrokeUpdate.stroke.lineWidth != strokeUpdate.stroke.lineWidth) {
-            firebaseReference.setValue(strokeUpdate.stroke, completionListener);
-        } else {
-            // If only points have updated, calculate the changes since last update, and only upload those points
-            Map<String, Object> pointUpdate = new HashMap<>();
-            int i = 0;
-            for (Vector3f p : strokeUpdate.stroke.points) {
-                // If point exceeds previous strokes length, add it
-                if (previousStrokeUpdate.stroke.points.size() <= i) {
-                    pointUpdate.put(String.valueOf(i), p);
-                } else {
-                    // Check if point equals previous point
-                    Vector3f prev = previousStrokeUpdate.stroke.points.get(i);
-                    if (!p.equals(prev)) {
-                        pointUpdate.put(String.valueOf(i), p);
-                    }
-                }
-                i++;
-            }
-
-            firebaseReference.child("points").updateChildren(pointUpdate, completionListener);
-        }
-    }
-
-    public void removeFirebaseValue() {
-        firebaseReference.removeValue();
-    }
-
-    public void setFirebaseReference(DatabaseReference firebaseReference) {
-        this.firebaseReference = firebaseReference;
-    }
-
-    public boolean hasFirebaseReference() {
-        return firebaseReference != null;
-    }
-
-    @Exclude
-    public String getFirebaseKey() {
-        return firebaseReference == null ? null : firebaseReference.getKey();
-    }
-
     public Stroke copy() {
         Stroke copy = new Stroke();
         copy.creator = creator;
         copy.lineWidth = lineWidth;
-        copy.firebaseReference = firebaseReference;
         copy.points = new ArrayList<>(points);
         return copy;
     }

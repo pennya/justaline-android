@@ -19,15 +19,13 @@ import android.support.constraint.ConstraintLayout;
 import android.util.AttributeSet;
 import android.widget.ImageView;
 
-import com.arexperiments.justaline.PairSessionManager;
 import com.arexperiments.justaline.R;
 
 /**
  * Created by Kat on 3/29/18.
  */
 
-public class PairButton extends ConstraintLayout
-        implements PairSessionManager.PartnerUpdateListener {
+public class PairButton extends ConstraintLayout {
 
     private ImageView mIcon;
 
@@ -57,20 +55,5 @@ public class PairButton extends ConstraintLayout
         } else {
             mIcon.setActivated(true);
         }
-    }
-
-    @Override
-    public void onPartnerCountChanged(int partnerCount) {
-        setCount(partnerCount);
-    }
-
-    @Override
-    public void onConnectedToSession() {
-        mIcon.setSelected(true);
-    }
-
-    @Override
-    public void onDisconnectedFromSession() {
-        mIcon.setSelected(false);
     }
 }

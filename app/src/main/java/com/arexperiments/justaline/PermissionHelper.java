@@ -28,7 +28,6 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 
 import com.arexperiments.justaline.analytics.AnalyticsEvents;
-import com.arexperiments.justaline.analytics.Fa;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -270,35 +269,5 @@ public class PermissionHelper {
             }
         }
         return false;
-    }
-
-    public static void sendPermissionsAnalytics(Fa analytics,
-                                                String[] permissions, int[] grantResults) {
-        for (int i = 0; i < permissions.length; i++) {
-            switch (permissions[i]) {
-                case CAMERA_PERMISSION:
-                    if (grantResults[i] == PackageManager.PERMISSION_GRANTED) {
-                        analytics.send(AnalyticsEvents.EVENT_CAMERA_PERMISSION_GRANTED, null);
-                    } else {
-                        analytics.send(AnalyticsEvents.EVENT_CAMERA_PERMISSION_DENIED, null);
-                    }
-                    break;
-                case RECORD_AUDIO_PERMISSION:
-                    if (grantResults[i] == PackageManager.PERMISSION_GRANTED) {
-                        analytics.send(AnalyticsEvents.EVENT_MICROPHONE_PERMISSION_GRANTED,
-                                null);
-                    } else {
-                        analytics.send(AnalyticsEvents.EVENT_MICROPHONE_PERMISSION_DENIED, null);
-                    }
-                    break;
-                case WRITE_EXTERNAL_STORAGE_PERMISSION:
-                    if (grantResults[i] == PackageManager.PERMISSION_GRANTED) {
-                        analytics.send(AnalyticsEvents.EVENT_STORAGE_PERMISSION_GRANTED, null);
-                    } else {
-                        analytics.send(AnalyticsEvents.EVENT_STORAGE_PERMISSION_DENIED, null);
-                    }
-                    break;
-            }
-        }
     }
 }

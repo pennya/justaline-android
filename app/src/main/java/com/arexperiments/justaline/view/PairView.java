@@ -30,10 +30,8 @@ import android.widget.TextView;
 
 import com.airbnb.lottie.LottieAnimationView;
 import com.arexperiments.justaline.BuildConfig;
-import com.arexperiments.justaline.PairSessionManager;
 import com.arexperiments.justaline.R;
 import com.arexperiments.justaline.analytics.AnalyticsEvents;
-import com.arexperiments.justaline.analytics.Fa;
 import com.google.ar.core.Anchor;
 
 import java.util.concurrent.TimeUnit;
@@ -46,8 +44,7 @@ import static com.airbnb.lottie.LottieDrawable.RESTART;
  */
 
 public class PairView extends ConstraintLayout
-        implements PairSessionManager.PairingStateChangeListener,
-        TrackingIndicator.DisplayListener {
+        implements TrackingIndicator.DisplayListener {
 
     private static final long DELAY_STATE_TRANSITION = TimeUnit.SECONDS.toMillis(2);
 
@@ -135,7 +132,6 @@ public class PairView extends ConstraintLayout
                 if (listener != null) {
                     listener.onPairCanceled();
                 }
-                Fa.get().send(AnalyticsEvents.EVENT_TAPPED_EXIT_PAIR_FLOW);
             }
         });
 
@@ -237,43 +233,6 @@ public class PairView extends ConstraintLayout
                 progressBar.setProgress((int) (COUNTDOWN_DURATION * COUNTDOWN_MAX_PROGRESS));
             }
         };
-    }
-
-    @Override
-    public void onStateChange(final PairState state,
-                              final Anchor.CloudAnchorState cloudAnchorState,
-                              final boolean notTracking) {
-        handler.post(new Runnable() {
-            @Override
-            public void run() {
-                if (notTracking) {
-                    setState(state, "NotTrackingException");
-                } else {
-                    setState(state, cloudAnchorState == null ? null : cloudAnchorState.toString());
-                }
-            }
-        });
-    }
-
-    @Override
-    public void onStateChange(final PairState state) {
-        handler.post(new Runnable() {
-            @Override
-            public void run() {
-                setState(state, null);
-            }
-        });
-
-    }
-
-    @Override
-    public void onStateChange(final PairState state, final String message) {
-        handler.post(new Runnable() {
-            @Override
-            public void run() {
-                setState(state, message);
-            }
-        });
     }
 
     private void setState(PairState state) {

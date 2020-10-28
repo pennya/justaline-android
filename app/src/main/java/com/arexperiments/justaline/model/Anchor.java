@@ -14,18 +14,14 @@
 
 package com.arexperiments.justaline.model;
 
-import com.google.firebase.database.PropertyName;
-
 /**
  * Created by Kat on 4/3/18.
  */
 
 public class Anchor {
 
-    @PropertyName("anchorId")
     protected String anchorId;
 
-    @PropertyName("anchorResolutionError")
     protected boolean anchorResolutionError;
 
     public Anchor() {

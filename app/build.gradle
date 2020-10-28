@@ -1,7 +1,5 @@
 apply plugin: 'com.android.application'
 
-def API_KEY = '"' + ApiKey + '"' ?: '"Define your ApiKey in gradle.properties"'
-
 android {
     compileSdkVersion 27
     buildToolsVersion '27.0.3'
@@ -28,13 +26,11 @@ android {
             versionNameSuffix "-sandbox"
             buildConfigField "boolean", "GLOBAL", "true"
             buildConfigField "boolean", "SHOW_NAVIGATION", "false"
-            resValue "string", "ApiKey", API_KEY
         }
         production {
             dimension "mode"
             buildConfigField "boolean", "GLOBAL", "false"
             buildConfigField "boolean", "SHOW_NAVIGATION", "true"
-            resValue "string", "ApiKey", API_KEY
         }
     }
 
@@ -56,13 +52,5 @@ dependencies {
     implementation 'com.uncorkedstudios.android:recordable-surfaceview:1.1.1'
     implementation 'com.google.code.gson:gson:2.8.2'
 
-    implementation 'com.google.firebase:firebase-core:15.0.2'
-    implementation 'com.google.firebase:firebase-database:15.0.1'
-    implementation 'com.google.firebase:firebase-auth:15.1.0'
-    implementation 'com.google.firebase:firebase-crash:15.0.2'
-    implementation 'com.google.android.gms:play-services-nearby:15.0.1'
-
     implementation 'com.airbnb.android:lottie:2.5.3'
 }
-
-apply plugin: 'com.google.gms.google-services'

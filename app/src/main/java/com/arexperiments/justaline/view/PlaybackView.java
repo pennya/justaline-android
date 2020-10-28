@@ -38,7 +38,6 @@ import android.widget.Toast;
 import com.arexperiments.justaline.PermissionHelper;
 import com.arexperiments.justaline.R;
 import com.arexperiments.justaline.analytics.AnalyticsEvents;
-import com.arexperiments.justaline.analytics.Fa;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -56,8 +55,6 @@ public class PlaybackView extends ConstraintLayout implements View.OnClickListen
             = "com.arexperiments.justaline.fileprovider";
 
     private File mVideoFile;
-
-    private Fa mAnalytics;
 
     private Uri mUri;
 
@@ -93,8 +90,6 @@ public class PlaybackView extends ConstraintLayout implements View.OnClickListen
         inflate(getContext(), R.layout.view_playback, this);
 
         setBackgroundColor(Color.BLACK);
-
-        mAnalytics = Fa.get();
 
         TextureView mVideoTextureView = findViewById(R.id.video);
         mVideoTextureView.setSurfaceTextureListener(this);
@@ -209,8 +204,6 @@ public class PlaybackView extends ConstraintLayout implements View.OnClickListen
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
                                            @NonNull int[] grantResults) {
 
-        PermissionHelper.sendPermissionsAnalytics(mAnalytics, permissions, grantResults);
-
         if (PermissionHelper.hasStoragePermission(getContext())) {
             save(mVideoFile);
         } else {
@@ -265,11 +258,9 @@ public class PlaybackView extends ConstraintLayout implements View.OnClickListen
                 break;
             case R.id.layout_share:
                 share(mUri);
-                mAnalytics.send(AnalyticsEvents.EVENT_TAPPED_SHARE_RECORDING);
                 break;
             case R.id.layout_save:
                 save(mVideoFile);
-                mAnalytics.send(AnalyticsEvents.EVENT_TAPPED_SAVE);
                 break;
         }
     }

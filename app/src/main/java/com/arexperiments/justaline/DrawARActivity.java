@@ -37,7 +37,6 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.arexperiments.justaline.analytics.AnalyticsEvents;
-import com.arexperiments.justaline.analytics.Fa;
 import com.arexperiments.justaline.model.Stroke;
 import com.arexperiments.justaline.rendering.AnchorRenderer;
 import com.arexperiments.justaline.rendering.BackgroundRenderer;
@@ -90,17 +89,14 @@ import javax.vecmath.Vector3f;
 public class DrawARActivity extends BaseActivity
         implements RecordableSurfaceView.RendererCallbacks, View.OnClickListener,
         RecordButton.Listener, ClearDrawingDialog.Listener, PlaybackView.Listener,
-        ErrorDialog.Listener, RoomManager.StrokeUpdateListener, PairView.Listener,
-        LeaveRoomDialog.Listener, PairSessionManager.AnchorStateListener,
-        PairButtonToolTip.Listener, PairSessionManager.PartnerUpdateListener {
+        ErrorDialog.Listener, PairView.Listener,
+        LeaveRoomDialog.Listener, PairButtonToolTip.Listener {
 
     private static final String TAG = "DrawARActivity";
 
     private static final boolean JOIN_GLOBAL_ROOM = BuildConfig.GLOBAL;
 
     private static final int TOUCH_QUEUE_SIZE = 10;
-
-    private Fa mAnalytics;
 
     enum Mode {
         DRAW, PAIR_PARTNER_DISCOVERY, PAIR_ANCHOR_RESOLVING, PAIR_ERROR, PAIR_SUCCESS
@@ -214,8 +210,6 @@ public class DrawARActivity extends BaseActivity
 
     private PairView mPairView;
 
-    private PairSessionManager mPairSessionManager;
-
     /**
      * Setup the app when main activity is created
      */
@@ -231,8 +225,6 @@ public class DrawARActivity extends BaseActivity
             mDebugView.setVisibility(View.VISIBLE);
             mDebugEnabled = true;
         }
-
-        mAnalytics = Fa.get();
 
         mTrackingIndicator = findViewById(R.id.finding_surfaces_view);
 
@@ -277,42 +269,6 @@ public class DrawARActivity extends BaseActivity
 
         mPairView = findViewById(R.id.view_join);
         mPairView.setListener(this);
-
-        if (JOIN_GLOBAL_ROOM) {
-            mPairSessionManager = new GlobalPairSessionManager(this);
-
-            AlertDialog.Builder builder = new AlertDialog.Builder(this);
-            builder.setTitle("Pick global session")
-                    .setItems(R.array.sessions_array, new DialogInterface.OnClickListener() {
-                        public void onClick(DialogInterface dialog, int which) {
-                            GlobalRoomManager.setGlobalRoomName(String.valueOf(which));
-                        }
-                    });
-            AlertDialog dialog = builder.create();
-            dialog.show();
-        } else {
-            mPairSessionManager = new PairSessionManager(this);
-        }
-        mPairSessionManager.setPairingStateChangeListener(mPairView);
-        mPairSessionManager.addPartnerUpdateListener(mPairButton);
-        mPairSessionManager.addPartnerUpdateListener(this);
-        mPairSessionManager.setAnchorStateListener(this);
-    }
-
-    @Override
-    protected void onStart() {
-        super.onStart();
-        mPairSessionManager.login(this);
-        if (mPairSessionManager.isPaired()) {
-            mPairSessionManager.resumeListeners(this);
-        }
-    }
-
-    @Override
-    protected void onStop() {
-        mPairSessionManager.pauseListeners();
-
-        super.onStop();
     }
 
     /**
@@ -403,29 +359,11 @@ public class DrawARActivity extends BaseActivity
 
         mPlaybackView.resume();
 
-        if (mPairSessionManager.isPaired()) {
-
-            if (!SessionHelper.shouldContinuePairedSession(this)) {
-                mPairSessionManager.checkForPartners(new RoomManager.PartnerDetectionListener() {
-                    @Override
-                    public void onPartnersDetected() {
-                        // Stay in room
-                    }
-
-                    @Override
-                    public void onNoPartnersDetected() {
-                        mPairSessionManager.leaveRoom(false);
-                    }
-                });
-            } // time limit has not elapsed, force rejoin room (listeners restarted in onStart)
-
-        } else if (!SessionHelper.shouldContinueSession(this)) {
+        if (!SessionHelper.shouldContinueSession(this)) {
             // if user has left activity for too long, clear the strokes from the previous session
             bClearDrawing.set(true);
             showStrokeDependentUI();
         }
-
-        mPairSessionManager.setSession(mSession);
 
         mPairView.setListener(this);
 
@@ -485,12 +423,7 @@ public class DrawARActivity extends BaseActivity
         // update firebase
         int index = mStrokes.size() - 1;
 //        mPairSessionManager.updateStroke(index, mStrokes.get(index));
-        mPairSessionManager.addStroke(mStrokes.get(index));
-
         showStrokeDependentUI();
-
-        mAnalytics.setUserProperty(AnalyticsEvents.USER_PROPERTY_HAS_DRAWN,
-                AnalyticsEvents.VALUE_TRUE);
 
         mTrackingIndicator.setDrawnInSession();
     }
@@ -531,8 +464,6 @@ public class DrawARActivity extends BaseActivity
             }
         }
 
-        // update firebase database
-        mPairSessionManager.updateStroke(mStrokes.get(index));
         isDrawing = true;
     }
 
@@ -554,15 +485,11 @@ public class DrawARActivity extends BaseActivity
 
             // Notify the hostManager of all the anchor updates.
             Collection<Anchor> updatedAnchors = mFrame.getUpdatedAnchors();
-            mPairSessionManager.onUpdate(updatedAnchors);
 
             // Update tracking states
             mTrackingIndicator.setTrackingStates(mFrame, mAnchor);
             if (mTrackingIndicator.trackingState == TrackingState.TRACKING && !bHasTracked.get()) {
                 bHasTracked.set(true);
-                mAnalytics
-                        .setUserProperty(AnalyticsEvents.USER_PROPERTY_TRACKING_ESTABLISHED,
-                                AnalyticsEvents.VALUE_TRUE);
             }
 
             // Get projection matrix.
@@ -654,7 +581,6 @@ public class DrawARActivity extends BaseActivity
                 bUndo.set(false);
                 if (mStrokes.size() > 0) {
                     int index = mStrokes.size() - 1;
-                    mPairSessionManager.undoStroke(mStrokes.get(index));
                     mStrokes.remove(index);
                     if (mStrokes.isEmpty()) {
                         showStrokeDependentUI();
@@ -773,7 +699,6 @@ public class DrawARActivity extends BaseActivity
     private void clearDrawing() {
         mStrokes.clear();
         mLineShaderRenderer.clear();
-        mPairSessionManager.clearStrokes();
         showStrokeDependentUI();
     }
 
@@ -785,9 +710,6 @@ public class DrawARActivity extends BaseActivity
     public void onClickUndo(View button) {
 
         bUndo.set(true);
-
-        mAnalytics.setUserProperty(AnalyticsEvents.USER_PROPERTY_TAPPED_UNDO,
-                AnalyticsEvents.VALUE_TRUE);
     }
 
     private void toggleOverflowMenu() {
@@ -815,7 +737,6 @@ public class DrawARActivity extends BaseActivity
             stoppedSuccessfully = mSurfaceView.stopRecording();
         } catch (RuntimeException e) {
             stoppedSuccessfully = false;
-            Fa.get().exception(e, "Error stopping recording");
         }
         if (stoppedSuccessfully) {
             mRecordButton.setEnabled(false);
@@ -861,11 +782,7 @@ public class DrawARActivity extends BaseActivity
     /**
      * onClickClear handle showing an AlertDialog to clear the drawing
      */
-    private void onClickClear() {
-        ClearDrawingDialog.newInstance(mPairSessionManager.isPaired()).show(this);
-        mAnalytics.setUserProperty(AnalyticsEvents.USER_PROPERTY_TAPPED_CLEAR,
-                AnalyticsEvents.VALUE_TRUE);
-    }
+    private void onClickClear() { }
 
     // ------- Touch events
 
@@ -1003,7 +920,6 @@ public class DrawARActivity extends BaseActivity
             });
         } catch (IOException ioex) {
             Log.e(TAG, "Couldn't setup recording", ioex);
-            Fa.get().exception(ioex, "Error setting up recording");
         }
 
 
@@ -1090,7 +1006,6 @@ public class DrawARActivity extends BaseActivity
                 break;
             case R.id.menu_item_share_app:
                 shareApp();
-                mAnalytics.send(AnalyticsEvents.EVENT_TAPPED_SHARE_APP);
                 break;
 //            case R.id.menu_item_crash:
 //                throw new RuntimeException("Intentional crash from overflow menu option");
@@ -1098,9 +1013,7 @@ public class DrawARActivity extends BaseActivity
 //                findViewById(R.id.draw_container).setVisibility(View.INVISIBLE);
 //                break;
             case R.id.button_pair:
-                if (mPairSessionManager.isInRoom()) {
-                    LeaveRoomDialog.newInstance().show(this);
-                } else if (mPairButtonToolTip.getVisibility() == View.GONE) {
+                if (mPairButtonToolTip.getVisibility() == View.GONE) {
                     mPairButtonToolTip.show();
                     mPairButton.setContentDescription(getString(R.string.content_description_close_join_friend_menu));
                     mPairButton.setAccessibilityTraversalBefore(R.id.pair_tooltip_title);
@@ -1114,8 +1027,6 @@ public class DrawARActivity extends BaseActivity
         }
         if (hidePairToolTip) {
             mPairButtonToolTip.hide();
-            if (!mPairSessionManager.isPaired())
-                mPairButton.setContentDescription(getString(R.string.content_description_join_friend));
         }
     }
 
@@ -1134,7 +1045,6 @@ public class DrawARActivity extends BaseActivity
         try {
             mSurfaceView.stopRecording();
         } catch (RuntimeException e) {
-            Fa.get().exception(e, "Error stopping recording during cancel");
         }
 
         // reset everything to try again
@@ -1153,7 +1063,6 @@ public class DrawARActivity extends BaseActivity
         } else if (mMode == Mode.PAIR_PARTNER_DISCOVERY || mMode == Mode.PAIR_ANCHOR_RESOLVING) {
             mPairView.hide();
             setMode(Mode.DRAW);
-            mPairSessionManager.leaveRoom(false);
         } else {
             super.onBackPressed();
         }
@@ -1195,22 +1104,12 @@ public class DrawARActivity extends BaseActivity
 
     @Override
     public void onPairPressed() {
-        mPairSessionManager.startPairingSession(this);
-
         mPairButton.setContentDescription(getString(R.string.content_description_disconnect_from_friend));
-
-        Fa.get().send(AnalyticsEvents.EVENT_TAPPED_START_PAIR);
-        Fa.get().setUserProperty(AnalyticsEvents.USER_PROPERTY_HAS_TAPPED_PAIR,
-                AnalyticsEvents.VALUE_TRUE);
     }
 
     @Override
     public void onJoinRoomPressed() {
-        try {
-            ((GlobalPairSessionManager) mPairSessionManager).joinGlobalRoom(this);
-        } catch (ClassCastException e) {
-            Fa.get().exception(e, "Join Room pressed in production app");
-        }
+
     }
 
     /**
@@ -1248,24 +1147,6 @@ public class DrawARActivity extends BaseActivity
         }
     }
 
-    @Override
-    public void setAnchor(Anchor anchor) {
-        mAnchor = anchor;
-
-        for (Stroke stroke : mStrokes) {
-            Log.d(TAG, "setAnchor: pushing line");
-            stroke.offsetToPose(mAnchor.getPose());
-            mPairSessionManager.addStroke(stroke);
-        }
-
-        mLineShaderRenderer.bNeedsUpdate.set(true);
-    }
-
-    @Override
-    public void onModeChanged(Mode mode) {
-        setMode(mode);
-    }
-
     private void showView(View toShow) {
         toShow.setVisibility(View.VISIBLE);
         toShow.animate().alpha(1).start();
@@ -1295,8 +1176,6 @@ public class DrawARActivity extends BaseActivity
         mPairView.hide();
 
         setMode(Mode.DRAW);
-
-        mPairSessionManager.leaveRoom(false);
     }
 
     @Override
@@ -1306,8 +1185,6 @@ public class DrawARActivity extends BaseActivity
 
     @Override
     public void onReadyToSetAnchor() {
-        mPairSessionManager.readyToSetAnchor();
-        Fa.get().send(AnalyticsEvents.EVENT_TAPPED_READY_TO_SET_ANCHOR);
     }
 
     public void createAnchor() {
@@ -1335,64 +1212,19 @@ public class DrawARActivity extends BaseActivity
                     return;
                 }
 
-                mPairSessionManager.onAnchorCreated();
                 if (mStrokes.size() > 0) {
                     for (int i = 0; i < mStrokes.size(); i++) {
                         mStrokes.get(i).offsetToPose(pose);
-                        if (mStrokes.get(i).hasFirebaseReference())
-                            mPairSessionManager.updateStroke(mStrokes.get(i));
-                        else
-                            mPairSessionManager.addStroke(mStrokes.get(i));
                     }
                     mLineShaderRenderer.bNeedsUpdate.set(true);
                 }
-
-                mPairSessionManager.setAnchor(mAnchor);
             }
         });
     }
 
     @Override
-    public void clearLines() {
-        mSharedStrokes.clear();
-        mStrokes.clear();
-        mLineShaderRenderer.bNeedsUpdate.set(true);
-    }
-
-    @Override
-    public void onAnchorChangedLeftRoom() {
-        ErrorDialog.newInstance(R.string.drawing_session_ended, false)
-                .show(this);
-    }
-
-    @Override
-    public void onConnectivityLostLeftRoom() {
-        ErrorDialog.newInstance(R.string.pair_no_data_connection_title,
-                R.string.pair_no_data_connection_body, false)
-                .show(this);
-    }
-
-    @Override
-    public void clearAnchor(Anchor anchor) {
-        if (anchor != null && anchor.equals(mAnchor)) {
-            for (Stroke stroke : mStrokes) {
-                stroke.offsetFromPose(mAnchor.getPose());
-            }
-            mAnchor = null;
-            Matrix.setIdentityM(mLineShaderRenderer.mModelMatrix, 0);
-        }
-    }
-
-    @Override
-    public void setRoomNumber(String roomKey) {
-        if (mDebugEnabled) {
-            mDebugView.setRoomNumber(roomKey);
-        }
-    }
-
-    @Override
     public void onReadyResolveAnchor() {
-        mPairSessionManager.resolveAnchorFromAnchorId();
+
     }
 
     @Override
@@ -1412,88 +1244,7 @@ public class DrawARActivity extends BaseActivity
 
     @Override
     public void attemptPartnerDiscovery() {
-        mPairSessionManager.startPairingSession(this);
-    }
 
-    @Override
-    public void onPartnerCountChanged(int partnerCount) {
-        if (partnerCount < 2) {
-            mPairActiveView.setText(R.string.partner_lost);
-            mPairActiveView.setBackgroundResource(R.drawable.bg_pair_state_partner_lost);
-        } else {
-            mPairActiveView.setText(R.string.partner_paired);
-            mPairActiveView.setBackgroundResource(R.drawable.bg_pair_state_paired);
-        }
-    }
-
-    @Override
-    public void onConnectedToSession() {
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                mPairSessionManager.setStrokeListener(DrawARActivity.this);
-                mPairActiveView.setText(R.string.partner_paired);
-                showView(mPairActiveView);
-
-                mTrackingIndicator.setAnchorTrackingMessageEnabled(true);
-                mTrackingIndicator.setShowPairedSessionDrawPrompt(true);
-            }
-        });
-    }
-
-    @Override
-    public void onDisconnectedFromSession() {
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                hideView(mPairActiveView);
-
-                mPairButton.setContentDescription(getString(R.string.content_description_join_friend));
-
-                mTrackingIndicator.setAnchorTrackingMessageEnabled(false);
-                mTrackingIndicator.setShowPairedSessionDrawPrompt(false);
-            }
-        });
-    }
-
-    @Override
-    public void onLineAdded(String uid, Stroke value) {
-        value.localLine = false;
-        value.calculateTotalLength();
-        mSharedStrokes.put(uid, value);
-        showStrokeDependentUI();
-        mLineShaderRenderer.bNeedsUpdate.set(true);
-    }
-
-    @Override
-    public void onLineRemoved(String uid) {
-        if (mSharedStrokes.containsKey(uid)) {
-            mSharedStrokes.remove(uid);
-            mLineShaderRenderer.bNeedsUpdate.set(true);
-        } else {
-            for (Stroke stroke : mStrokes) {
-                if (uid.equals(stroke.getFirebaseKey())) {
-                    mStrokes.remove(stroke);
-                    if (!stroke.finished) {
-                        bTouchDown.set(false);
-                    }
-                    mLineShaderRenderer.bNeedsUpdate.set(true);
-                    break;
-                }
-            }
-        }
-
-        showStrokeDependentUI();
-    }
-
-    @Override
-    public void onLineUpdated(String uid, Stroke value) {
-        Stroke stroke = mSharedStrokes.get(uid);
-        if (stroke == null) {
-            return;
-        }
-        stroke.updateStrokeData(value);
-        mLineShaderRenderer.bNeedsUpdate.set(true);
     }
 
     @Override
@@ -1503,8 +1254,6 @@ public class DrawARActivity extends BaseActivity
 
     @Override
     public void onExitRoomSelected() {
-        mPairSessionManager.leaveRoom(true);
-        Fa.get().send(AnalyticsEvents.EVENT_TAPPED_DISCONNECT_PAIRED_SESSION);
     }
 
 }

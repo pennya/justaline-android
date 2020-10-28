@@ -84,12 +84,6 @@
                 android:theme="@style/Theme.AppCompat.NoActionBar"/>
 
         <meta-data android:name="com.google.ar.core" android:value="required"/>
-        <meta-data
-                android:name="com.google.android.ar.API_KEY"
-                android:value="@string/ApiKey"/>
-        <meta-data
-                android:name="com.google.android.nearby.messages.API_KEY"
-                android:value="@string/ApiKey" />
 
     </application>
 
